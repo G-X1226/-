@@ -1,0 +1,14 @@
+{
+  "description": "随机抽签小程序",
+  "appid": "touristappid",
+  "projectname": "lottery-picker",
+  "miniprogramRoot": "",
+  "compileType": "miniprogram",
+  "setting": {
+    "urlCheck": true,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true
+  }
+}
