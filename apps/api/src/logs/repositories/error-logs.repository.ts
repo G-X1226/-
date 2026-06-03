@@ -18,7 +18,7 @@ export class ErrorLogsRepository {
         message: input.message,
         providerName: input.providerName,
         upstreamStatusCode: input.upstreamStatusCode,
-        metadata: input.metadata,
+        metadata: input.metadata as any,
       },
     });
   }

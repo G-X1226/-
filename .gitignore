@@ -9,3 +9,6 @@ coverage/
 *.log
 .pnpm-store/
 .prisma/
+
+*.tsbuildinfo
+.next/

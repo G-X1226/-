@@ -13,7 +13,11 @@
     "format": "pnpm --filter @ai-gateway/api format",
     "prisma:generate": "prisma generate --schema prisma/schema.prisma",
     "prisma:migrate": "prisma migrate dev --schema prisma/schema.prisma",
-    "prisma:seed": "ts-node prisma/seed.ts"
+    "prisma:seed": "ts-node prisma/seed.ts",
+    "dev:admin": "pnpm --filter @ai-gateway/admin-web dev",
+    "build:admin": "pnpm --filter @ai-gateway/admin-web build",
+    "lint:admin": "pnpm --filter @ai-gateway/admin-web lint",
+    "typecheck:admin": "pnpm --filter @ai-gateway/admin-web typecheck"
   },
   "devDependencies": {
     "@prisma/client": "^6.8.2",

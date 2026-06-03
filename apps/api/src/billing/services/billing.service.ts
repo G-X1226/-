@@ -1,4 +1,4 @@
-import { Injectable, TooManyRequestsException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import type { BillingChargeInput, BillingChargeResult } from '../types/billing-result.type';
 import { BalanceService } from './balance.service';
@@ -12,18 +12,18 @@ export class BillingService {
 
   async assertCanSpend(userId: string): Promise<void> {
     if (!(await this.balanceService.hasPositiveBalance(userId))) {
-      throw new TooManyRequestsException('Insufficient quota.');
+      throw new HttpException('Insufficient quota.', HttpStatus.TOO_MANY_REQUESTS);
     }
   }
 
   async chargeUsage(input: BillingChargeInput): Promise<BillingChargeResult> {
     return this.prisma.$transaction(async (tx) => {
       const user = await tx.user.findUnique({ where: { id: input.userId } });
-      if (!user) throw new TooManyRequestsException('Insufficient quota.');
+      if (!user) throw new HttpException('Insufficient quota.', HttpStatus.TOO_MANY_REQUESTS);
 
       const charge = input.costCreditsMicro;
       if (user.freeCreditsMicro + user.balanceCreditsMicro < charge) {
-        throw new TooManyRequestsException('Insufficient quota.');
+        throw new HttpException('Insufficient quota.', HttpStatus.TOO_MANY_REQUESTS);
       }
 
       const freeCreditsUsedMicro = charge <= user.freeCreditsMicro ? charge : user.freeCreditsMicro;

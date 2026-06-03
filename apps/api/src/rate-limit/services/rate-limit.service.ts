@@ -1,4 +1,4 @@
-import { Injectable, TooManyRequestsException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import type { AuthenticatedApiKey } from '../../api-keys/types/authenticated-api-key.type';
 import { RedisRateLimitStoreService } from './redis-rate-limit-store.service';
 
@@ -14,7 +14,7 @@ export class RateLimitService {
   async assertFixedWindow(key: string, limit: number, windowMs: number, incrementBy = 1): Promise<void> {
     const result = await this.store.fixedWindow(key, limit, windowMs, incrementBy);
     if (!result.allowed) {
-      throw new TooManyRequestsException('Rate limit exceeded.');
+      throw new HttpException('Rate limit exceeded.', HttpStatus.TOO_MANY_REQUESTS);
     }
   }
 
