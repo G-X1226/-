@@ -1,5 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import type { AuthenticatedApiKey } from '../../api-keys/types/authenticated-api-key.type';
+import { API_KEY_SCOPES } from '../../common/constants/scopes.constants';
 import { createRequestId } from '../../common/utils/ids.util';
+import { ModelPermissionService } from '../../model-routing/services/model-permission.service';
 import { ModelRoutingService } from '../../model-routing/services/model-routing.service';
 import { ProviderExecutorService } from '../../providers/application/provider-executor.service';
 import type { NormalizedChatRequest } from '../../providers/domain/normalized-chat-request.type';
@@ -11,12 +14,19 @@ import { OpenAiResponseMapperService } from './openai-response-mapper.service';
 export class ChatCompletionsService {
   constructor(
     private readonly modelRouting: ModelRoutingService,
+    private readonly modelPermission: ModelPermissionService,
     private readonly providerExecutor: ProviderExecutorService,
     private readonly responseMapper: OpenAiResponseMapperService,
   ) {}
 
-  async createCompletion(request: ChatCompletionRequestDto): Promise<Record<string, unknown>> {
+  async createCompletion(
+    request: ChatCompletionRequestDto,
+    apiKey: AuthenticatedApiKey,
+  ): Promise<Record<string, unknown>> {
     assertValidChatCompletionRequest(request);
+    this.assertScope(apiKey, API_KEY_SCOPES.CHAT_COMPLETIONS_CREATE);
+    this.modelPermission.assertAllowed(request.model, apiKey.allowedModels);
+
     const routes = await this.modelRouting.resolve(request.model);
     const route = routes[0];
     if (!route) {
@@ -39,5 +49,11 @@ export class ChatCompletionsService {
     });
 
     return this.responseMapper.mapChatCompletion(providerResponse);
+  }
+
+  private assertScope(apiKey: AuthenticatedApiKey, requiredScope: string): void {
+    if (!apiKey.scopes.includes(requiredScope)) {
+      throw new ForbiddenException(`API key is missing required scope: ${requiredScope}.`);
+    }
   }
 }

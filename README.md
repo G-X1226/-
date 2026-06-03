@@ -29,3 +29,20 @@ pnpm dev
 - Provider adapter interfaces and initial provider registry
 - OpenAI-compatible `/v1/chat/completions` protocol skeleton
 - Redis, PostgreSQL, health checks, and Docker Compose
+
+
+## Authentication MVP
+
+Dashboard users can register and log in with JWT-backed endpoints:
+
+- `POST /auth/register`
+- `POST /auth/login`
+- `GET /auth/me`
+
+Authenticated users can manage machine credentials through:
+
+- `POST /api-keys`
+- `GET /api-keys`
+- `DELETE /api-keys/:id`
+
+Full API keys are only returned once at creation time. Stored keys are HMAC-SHA256 hashed using `API_KEY_HASH_SECRET`.

@@ -3,8 +3,8 @@ import { createSecureToken } from '../../common/utils/crypto.util';
 
 @Injectable()
 export class ApiKeyGeneratorService {
-  generate(environment: 'live' | 'test' = 'live'): string {
-    return `sk_${environment}_${createSecureToken(32)}`;
+  generate(environment: 'LIVE' | 'TEST' = 'LIVE'): string {
+    return `sk_${environment.toLowerCase()}_${createSecureToken(32)}`;
   }
 
   getPrefix(apiKey: string): string {
