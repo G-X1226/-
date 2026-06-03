@@ -8,7 +8,7 @@ export class IpRateLimitGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
-    await this.rateLimitService.assertFixedWindow(`ratelimit:ip:${request.ip ?? 'unknown'}`, 120, 60_000);
+    await this.rateLimitService.assertIpMinuteLimit(request.ip ?? 'unknown');
     return true;
   }
 }

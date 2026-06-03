@@ -21,6 +21,7 @@ export class ModelRoutingService {
     const mappings = await this.mappingsRepository.findActiveMappings(model.id);
     const routes = mappings.map((mapping) => ({
       modelId: model.id,
+      providerId: mapping.providerId,
       providerName: mapping.provider.name,
       providerModel: mapping.providerModel,
       timeoutMs: mapping.timeoutMs,

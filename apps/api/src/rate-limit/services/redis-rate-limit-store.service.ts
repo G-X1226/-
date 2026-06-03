@@ -6,10 +6,10 @@ import type { RateLimitResult } from '../types/rate-limit-result.type';
 export class RedisRateLimitStoreService {
   constructor(private readonly redis: RedisService) {}
 
-  async fixedWindow(key: string, limit: number, windowMs: number): Promise<RateLimitResult> {
+  async fixedWindow(key: string, limit: number, windowMs: number, incrementBy = 1): Promise<RateLimitResult> {
     const client = this.redis.getClient();
-    const count = await client.incr(key);
-    if (count === 1) {
+    const count = await client.incrby(key, incrementBy);
+    if (count === incrementBy) {
       await client.pexpire(key, windowMs);
     }
     const ttl = await client.pttl(key);

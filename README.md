@@ -56,3 +56,20 @@ Machine clients authenticate with API keys and can call:
 - `GET /v1/models`
 
 `POST /v1/chat/completions` supports non-streaming JSON responses and `stream=true` OpenAI-style SSE responses ending with `data: [DONE]`.
+
+
+## Docker Compose deployment
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+Services:
+
+- API: `http://localhost:3000`
+- Nginx gateway: `http://localhost:8080`
+- PostgreSQL: `localhost:5432`
+- Redis: `localhost:6379`
+
+Health checks are available at `/health/live` and `/health/ready`.

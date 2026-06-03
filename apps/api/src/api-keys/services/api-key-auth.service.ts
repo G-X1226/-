@@ -43,6 +43,8 @@ export class ApiKeyAuthService {
       scopes: this.toStringArray(apiKey.scopes) ?? [],
       allowedModels: this.toStringArray(apiKey.allowedModels),
       rateLimitPolicyId: apiKey.rateLimitPolicyId,
+      rpmLimit: apiKey.rateLimitPolicy?.rpmLimit ?? null,
+      tpmLimit: apiKey.rateLimitPolicy?.tpmLimit ?? null,
     };
   }
 

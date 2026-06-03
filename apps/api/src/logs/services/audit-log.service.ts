@@ -1,8 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 @Injectable()
 export class AuditLogService {
-  recordPlaceholder(): string {
-    return 'audit_log_reserved';
+  private readonly logger = new Logger(AuditLogService.name);
+
+  record(event: string, metadata: Record<string, unknown> = {}): void {
+    this.logger.log({ event, metadata });
   }
 }
