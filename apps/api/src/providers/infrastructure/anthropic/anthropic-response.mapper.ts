@@ -1,20 +1,34 @@
 import type { NormalizedChatResponse } from '../../domain/normalized-chat-response.type';
 
+interface AnthropicContentBlock {
+  type?: string;
+  text?: string;
+}
+
+interface AnthropicUsage {
+  input_tokens?: number;
+  output_tokens?: number;
+}
+
 export function mapAnthropicResponse(raw: Record<string, unknown>, provider: string): NormalizedChatResponse {
-  const choices = Array.isArray(raw.choices) ? raw.choices : [];
-  const firstChoice = choices[0] as { message?: { content?: string }; finish_reason?: string } | undefined;
-  const usage = raw.usage as { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | undefined;
+  const content = Array.isArray(raw.content) ? (raw.content as AnthropicContentBlock[]) : [];
+  const usage = raw.usage as AnthropicUsage | undefined;
+  const promptTokens = usage?.input_tokens ?? 0;
+  const completionTokens = usage?.output_tokens ?? 0;
 
   return {
-    id: String(raw.id ?? 'chatcmpl_unknown'),
+    id: String(raw.id ?? 'msg_unknown'),
     model: String(raw.model ?? 'unknown'),
     provider,
-    content: firstChoice?.message?.content ?? '',
-    finishReason: firstChoice?.finish_reason ?? null,
+    content: content
+      .filter((block) => block.type === 'text' && typeof block.text === 'string')
+      .map((block) => block.text)
+      .join(''),
+    finishReason: typeof raw.stop_reason === 'string' ? raw.stop_reason : null,
     usage: {
-      promptTokens: usage?.prompt_tokens ?? 0,
-      completionTokens: usage?.completion_tokens ?? 0,
-      totalTokens: usage?.total_tokens ?? 0,
+      promptTokens,
+      completionTokens,
+      totalTokens: promptTokens + completionTokens,
     },
     rawResponse: raw,
   };

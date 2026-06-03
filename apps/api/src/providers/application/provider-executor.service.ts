@@ -25,7 +25,7 @@ export class ProviderExecutorService {
     }
 
     return this.retry.execute(
-      () => this.timeout.withTimeout(provider.chatCompletion(request), options.timeoutMs),
+      () => this.timeout.withTimeout(providerName, provider.chatCompletion(request), options.timeoutMs),
       options.maxRetries,
     );
   }

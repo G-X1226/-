@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { isProviderError } from '../domain/provider-error.type';
 
 @Injectable()
 export class ProviderRetryService {
@@ -11,6 +12,9 @@ export class ProviderRetryService {
         return await fn();
       } catch (error) {
         lastError = error;
+        if (!isProviderError(error) || !error.options.retryable || attempt === maxRetries) {
+          throw error;
+        }
         attempt += 1;
       }
     }

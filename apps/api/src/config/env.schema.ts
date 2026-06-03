@@ -9,9 +9,13 @@ export const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(32),
   API_KEY_HASH_SECRET: z.string().min(32),
   OPENAI_API_KEY: z.string().optional(),
+  OPENAI_BASE_URL: z.string().url().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
+  ANTHROPIC_BASE_URL: z.string().url().optional(),
   GEMINI_API_KEY: z.string().optional(),
+  GEMINI_BASE_URL: z.string().url().optional(),
   OPENROUTER_API_KEY: z.string().optional(),
+  OPENROUTER_BASE_URL: z.string().url().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

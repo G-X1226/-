@@ -7,6 +7,7 @@ import { ModelPermissionService } from '../../model-routing/services/model-permi
 import { ModelRoutingService } from '../../model-routing/services/model-routing.service';
 import type { ModelRoute } from '../../model-routing/types/model-route.type';
 import { ProviderExecutorService } from '../../providers/application/provider-executor.service';
+import { isProviderError } from '../../providers/domain/provider-error.type';
 import type { NormalizedChatRequest } from '../../providers/domain/normalized-chat-request.type';
 import type { ChatCompletionRequestDto } from '../dto/chat-completion-request.dto';
 import type { OpenAiChatCompletionResult } from '../types/openai-chat.types';
@@ -28,17 +29,33 @@ export class ChatCompletionsService {
     request: ChatCompletionRequestDto,
     apiKey: AuthenticatedApiKey,
   ): Promise<OpenAiChatCompletionResult> {
-    const { route, normalizedRequest } = await this.prepareRequest(request, apiKey, false);
+    const { routes, normalizedRequest } = await this.prepareRequest(request, apiKey, false);
+    let lastError: unknown;
 
-    const providerResponse = await this.providerExecutor.execute(route.providerName, normalizedRequest, {
-      timeoutMs: route.timeoutMs,
-      maxRetries: route.maxRetries,
-    });
+    for (const route of routes) {
+      try {
+        const providerResponse = await this.providerExecutor.execute(
+          route.providerName,
+          { ...normalizedRequest, providerModel: route.providerModel },
+          {
+            timeoutMs: route.timeoutMs,
+            maxRetries: route.maxRetries,
+          },
+        );
 
-    return {
-      requestId: normalizedRequest.requestId,
-      body: this.responseMapper.mapChatCompletion(providerResponse, normalizedRequest.requestId),
-    };
+        return {
+          requestId: normalizedRequest.requestId,
+          body: this.responseMapper.mapChatCompletion(providerResponse, normalizedRequest.requestId),
+        };
+      } catch (error) {
+        lastError = error;
+        if (!isProviderError(error) || !error.options.retryable) {
+          throw error;
+        }
+      }
+    }
+
+    throw lastError;
   }
 
   async streamCompletion(
@@ -46,8 +63,15 @@ export class ChatCompletionsService {
     apiKey: AuthenticatedApiKey,
     response: Response,
   ): Promise<void> {
-    const { route, normalizedRequest } = await this.prepareRequest(request, apiKey, true);
-    const chunks = this.providerExecutor.stream(route.providerName, normalizedRequest);
+    const { routes, normalizedRequest } = await this.prepareRequest(request, apiKey, true);
+    const route = routes[0];
+    if (!route) {
+      throw new NotFoundException(`No active provider mapping for model ${request.model}.`);
+    }
+    const chunks = this.providerExecutor.stream(route.providerName, {
+      ...normalizedRequest,
+      providerModel: route.providerModel,
+    });
     await this.sseResponse.writeOpenAiStream(response, normalizedRequest.model, chunks, {
       requestId: normalizedRequest.requestId,
     });
@@ -57,7 +81,7 @@ export class ChatCompletionsService {
     request: ChatCompletionRequestDto,
     apiKey: AuthenticatedApiKey,
     stream: boolean,
-  ): Promise<{ route: ModelRoute; normalizedRequest: NormalizedChatRequest }> {
+  ): Promise<{ routes: ModelRoute[]; normalizedRequest: NormalizedChatRequest }> {
     assertValidChatCompletionRequest(request);
     this.assertScope(apiKey, API_KEY_SCOPES.CHAT_COMPLETIONS_CREATE);
     this.modelPermission.assertAllowed(request.model, apiKey.allowedModels);
@@ -69,7 +93,7 @@ export class ChatCompletionsService {
     }
 
     return {
-      route,
+      routes,
       normalizedRequest: this.toNormalizedRequest(request, route, stream),
     };
   }

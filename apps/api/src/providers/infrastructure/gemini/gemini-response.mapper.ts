@@ -1,20 +1,33 @@
 import type { NormalizedChatResponse } from '../../domain/normalized-chat-response.type';
 
-export function mapGeminiResponse(raw: Record<string, unknown>, provider: string): NormalizedChatResponse {
-  const choices = Array.isArray(raw.choices) ? raw.choices : [];
-  const firstChoice = choices[0] as { message?: { content?: string }; finish_reason?: string } | undefined;
-  const usage = raw.usage as { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | undefined;
+interface GeminiCandidate {
+  content?: { parts?: Array<{ text?: string }> };
+  finishReason?: string;
+}
+
+interface GeminiUsage {
+  promptTokenCount?: number;
+  candidatesTokenCount?: number;
+  totalTokenCount?: number;
+}
+
+export function mapGeminiResponse(raw: Record<string, unknown>, provider: string, model: string): NormalizedChatResponse {
+  const candidates = Array.isArray(raw.candidates) ? raw.candidates : [];
+  const firstCandidate = candidates[0] as GeminiCandidate | undefined;
+  const usage = raw.usageMetadata as GeminiUsage | undefined;
+  const promptTokens = usage?.promptTokenCount ?? 0;
+  const completionTokens = usage?.candidatesTokenCount ?? 0;
 
   return {
-    id: String(raw.id ?? 'chatcmpl_unknown'),
-    model: String(raw.model ?? 'unknown'),
+    id: String(raw.responseId ?? 'gemini_unknown'),
+    model,
     provider,
-    content: firstChoice?.message?.content ?? '',
-    finishReason: firstChoice?.finish_reason ?? null,
+    content: firstCandidate?.content?.parts?.map((part) => part.text ?? '').join('') ?? '',
+    finishReason: firstCandidate?.finishReason ?? null,
     usage: {
-      promptTokens: usage?.prompt_tokens ?? 0,
-      completionTokens: usage?.completion_tokens ?? 0,
-      totalTokens: usage?.total_tokens ?? 0,
+      promptTokens,
+      completionTokens,
+      totalTokens: usage?.totalTokenCount ?? promptTokens + completionTokens,
     },
     rawResponse: raw,
   };
