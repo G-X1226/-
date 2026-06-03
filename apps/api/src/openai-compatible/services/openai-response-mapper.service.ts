@@ -3,9 +3,9 @@ import type { NormalizedChatResponse } from '../../providers/domain/normalized-c
 
 @Injectable()
 export class OpenAiResponseMapperService {
-  mapChatCompletion(response: NormalizedChatResponse): Record<string, unknown> {
+  mapChatCompletion(response: NormalizedChatResponse, requestId?: string): Record<string, unknown> {
     return {
-      id: response.id,
+      id: response.id || requestId || 'chatcmpl_unknown',
       object: 'chat.completion',
       created: Math.floor(Date.now() / 1000),
       model: response.model,

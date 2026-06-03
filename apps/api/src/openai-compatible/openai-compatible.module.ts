@@ -6,6 +6,7 @@ import { RateLimitModule } from '../rate-limit/rate-limit.module';
 import { ChatCompletionsController } from './controllers/chat-completions.controller';
 import { ModelsController } from './controllers/models.controller';
 import { ChatCompletionsService } from './services/chat-completions.service';
+import { ModelsService } from './services/models.service';
 import { OpenAiErrorMapperService } from './services/openai-error-mapper.service';
 import { OpenAiResponseMapperService } from './services/openai-response-mapper.service';
 import { SseResponseService } from './services/sse-response.service';
@@ -15,6 +16,7 @@ import { SseResponseService } from './services/sse-response.service';
   controllers: [ChatCompletionsController, ModelsController],
   providers: [
     ChatCompletionsService,
+    ModelsService,
     OpenAiResponseMapperService,
     OpenAiErrorMapperService,
     SseResponseService,

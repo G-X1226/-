@@ -1,9 +1,15 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { ApiKeyAuthGuard } from '../../api-keys/guards/api-key-auth.guard';
+import type { OpenAiModelsListResponse } from '../types/openai-model.types';
+import { ModelsService } from '../services/models.service';
 
 @Controller('v1/models')
 export class ModelsController {
+  constructor(private readonly modelsService: ModelsService) {}
+
   @Get()
-  listModelsPlaceholder(): { object: 'list'; data: unknown[] } {
-    return { object: 'list', data: [] };
+  @UseGuards(ApiKeyAuthGuard)
+  listModels(): Promise<OpenAiModelsListResponse> {
+    return this.modelsService.list();
   }
 }

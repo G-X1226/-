@@ -46,3 +46,13 @@ Authenticated users can manage machine credentials through:
 - `DELETE /api-keys/:id`
 
 Full API keys are only returned once at creation time. Stored keys are HMAC-SHA256 hashed using `API_KEY_HASH_SECRET`.
+
+
+## OpenAI-Compatible API MVP
+
+Machine clients authenticate with API keys and can call:
+
+- `POST /v1/chat/completions`
+- `GET /v1/models`
+
+`POST /v1/chat/completions` supports non-streaming JSON responses and `stream=true` OpenAI-style SSE responses ending with `data: [DONE]`.

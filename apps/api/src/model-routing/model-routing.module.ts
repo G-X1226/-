@@ -15,6 +15,6 @@ import { RoutingCacheService } from './services/routing-cache.service';
     ModelsRepository,
     ModelProviderMappingsRepository,
   ],
-  exports: [ModelRoutingService, ModelPermissionService],
+  exports: [ModelRoutingService, ModelPermissionService, ModelsRepository],
 })
 export class ModelRoutingModule {}

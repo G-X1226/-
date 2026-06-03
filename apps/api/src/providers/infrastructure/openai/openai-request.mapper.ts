@@ -7,5 +7,12 @@ export function mapOpenaiRequest(request: NormalizedChatRequest): Record<string,
     stream: request.stream,
     temperature: request.temperature,
     max_tokens: request.maxTokens,
+    stop: request.stop,
+    presence_penalty: request.presencePenalty,
+    frequency_penalty: request.frequencyPenalty,
+    response_format: request.responseFormat,
+    tools: request.tools,
+    tool_choice: request.toolChoice,
+    user: request.user,
   };
 }

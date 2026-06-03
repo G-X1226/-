@@ -8,4 +8,11 @@ export class ModelsRepository {
   findActiveByName(name: string) {
     return this.prisma.model.findFirst({ where: { name, status: 'ACTIVE' } });
   }
+
+  listActive() {
+    return this.prisma.model.findMany({
+      where: { status: 'ACTIVE' },
+      orderBy: { name: 'asc' },
+    });
+  }
 }
