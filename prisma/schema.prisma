@@ -1,0 +1,346 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  OWNER
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum ApiKeyStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum ApiKeyEnvironment {
+  TEST
+  LIVE
+}
+
+enum ProviderType {
+  OPENAI
+  DEEPSEEK
+  ANTHROPIC
+  GEMINI
+  OPENROUTER
+  CUSTOM
+}
+
+enum ProviderStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum CredentialStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum ModelStatus {
+  ACTIVE
+  DISABLED
+  DEPRECATED
+}
+
+enum ModelModality {
+  CHAT
+  EMBEDDING
+  IMAGE
+  AUDIO
+}
+
+enum MappingStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum UsageStatus {
+  COMPLETED
+  PARTIAL
+  FAILED
+  ESTIMATED
+}
+
+enum RequestStatus {
+  IN_PROGRESS
+  SUCCESS
+  FAILED
+  PARTIAL
+  CLIENT_ABORTED
+}
+
+enum BalanceTransactionType {
+  CREDIT_GRANT
+  PURCHASE
+  USAGE_CHARGE
+  REFUND
+  ADJUSTMENT
+  EXPIRED
+}
+
+model User {
+  id                    String               @id @default(uuid()) @db.Uuid
+  email                 String               @unique
+  passwordHash          String
+  role                  UserRole             @default(USER)
+  status                UserStatus           @default(ACTIVE)
+  balanceCreditsMicro   BigInt               @default(0)
+  freeCreditsMicro      BigInt               @default(0)
+  emailVerifiedAt       DateTime?
+  lastLoginAt           DateTime?
+  apiKeys               ApiKey[]
+  usageRecords          UsageRecord[]
+  requestLogs           RequestLog[]
+  balanceTransactions   BalanceTransaction[]
+  errorLogs             ErrorLog[]
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("users")
+}
+
+model ApiKey {
+  id                String             @id @default(uuid()) @db.Uuid
+  userId            String             @db.Uuid
+  name              String
+  prefix            String
+  hash              String             @unique
+  suffix            String
+  status            ApiKeyStatus       @default(ACTIVE)
+  environment       ApiKeyEnvironment  @default(LIVE)
+  scopes            Json
+  allowedModels     Json?
+  allowedIps        Json?
+  rateLimitPolicyId String?            @db.Uuid
+  lastUsedAt        DateTime?
+  expiresAt         DateTime?
+  revokedAt         DateTime?
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rateLimitPolicy   RateLimitPolicy?   @relation(fields: [rateLimitPolicyId], references: [id])
+  usageRecords      UsageRecord[]
+  requestLogs       RequestLog[]
+  errorLogs         ErrorLog[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([userId])
+  @@index([prefix])
+  @@index([status])
+  @@index([environment])
+  @@map("api_keys")
+}
+
+model RateLimitPolicy {
+  id                String   @id @default(uuid()) @db.Uuid
+  name              String   @unique
+  rpmLimit          Int
+  tpmLimit          Int
+  dailyRequestLimit Int?
+  dailyTokenLimit   Int?
+  description       String?
+  apiKeys           ApiKey[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("rate_limit_policies")
+}
+
+model Provider {
+  id           String                 @id @default(uuid()) @db.Uuid
+  name         String                 @unique
+  displayName  String
+  type         ProviderType
+  status       ProviderStatus         @default(ACTIVE)
+  baseUrl      String?
+  priority     Int                    @default(100)
+  credentials  ProviderCredential[]
+  mappings     ModelProviderMapping[]
+  usageRecords UsageRecord[]
+  requestLogs  RequestLog[]
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+
+  @@index([status])
+  @@index([type])
+  @@map("providers")
+}
+
+model ProviderCredential {
+  id             String           @id @default(uuid()) @db.Uuid
+  providerId     String           @db.Uuid
+  name           String
+  keyRef         String
+  encryptedValue String?
+  status         CredentialStatus @default(ACTIVE)
+  provider       Provider         @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([providerId])
+  @@index([status])
+  @@map("provider_credentials")
+}
+
+model Model {
+  id                              String                 @id @default(uuid()) @db.Uuid
+  name                            String                 @unique
+  displayName                     String
+  modality                        ModelModality          @default(CHAT)
+  status                          ModelStatus            @default(ACTIVE)
+  contextWindow                   Int?
+  inputPricePer1MTokensMicro      BigInt                 @default(0)
+  outputPricePer1MTokensMicro     BigInt                 @default(0)
+  mappings                        ModelProviderMapping[]
+  usageRecords                    UsageRecord[]
+  requestLogs                     RequestLog[]
+  createdAt                       DateTime               @default(now())
+  updatedAt                       DateTime               @updatedAt
+
+  @@index([status])
+  @@index([modality])
+  @@map("models")
+}
+
+model ModelProviderMapping {
+  id            String        @id @default(uuid()) @db.Uuid
+  modelId       String        @db.Uuid
+  providerId    String        @db.Uuid
+  providerModel String
+  isPrimary     Boolean       @default(false)
+  priority      Int           @default(100)
+  timeoutMs     Int           @default(60000)
+  maxRetries    Int           @default(1)
+  status        MappingStatus @default(ACTIVE)
+  model         Model         @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  provider      Provider      @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@unique([modelId, providerId, providerModel])
+  @@index([modelId])
+  @@index([providerId])
+  @@index([status])
+  @@index([isPrimary, priority])
+  @@map("model_provider_mappings")
+}
+
+model RequestLog {
+  id                 String        @id @default(uuid()) @db.Uuid
+  requestId          String        @unique
+  userId             String?       @db.Uuid
+  apiKeyId           String?       @db.Uuid
+  modelId            String?       @db.Uuid
+  providerId         String?       @db.Uuid
+  endpoint           String
+  method             String
+  stream             Boolean       @default(false)
+  status             RequestStatus @default(IN_PROGRESS)
+  latencyMs          Int?
+  upstreamLatencyMs  Int?
+  upstreamStatusCode Int?
+  clientIp           String?
+  userAgent          String?
+  errorCode          String?
+  user               User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  apiKey             ApiKey?       @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+  model              Model?        @relation(fields: [modelId], references: [id], onDelete: SetNull)
+  provider           Provider?     @relation(fields: [providerId], references: [id], onDelete: SetNull)
+  usageRecords       UsageRecord[]
+  errorLogs          ErrorLog[]
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([apiKeyId, createdAt])
+  @@index([modelId, createdAt])
+  @@index([providerId, createdAt])
+  @@index([status, createdAt])
+  @@map("request_logs")
+}
+
+model UsageRecord {
+  id                String      @id @default(uuid()) @db.Uuid
+  requestId         String
+  userId            String      @db.Uuid
+  apiKeyId          String?     @db.Uuid
+  modelId           String?     @db.Uuid
+  providerId        String?     @db.Uuid
+  providerModel     String?
+  promptTokens      Int         @default(0)
+  completionTokens  Int         @default(0)
+  totalTokens       Int         @default(0)
+  costCreditsMicro  BigInt      @default(0)
+  providerCostMicro BigInt      @default(0)
+  currency          String      @default("CREDIT")
+  status            UsageStatus @default(COMPLETED)
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apiKey            ApiKey?     @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+  model             Model?      @relation(fields: [modelId], references: [id], onDelete: SetNull)
+  provider          Provider?   @relation(fields: [providerId], references: [id], onDelete: SetNull)
+  requestLog        RequestLog  @relation(fields: [requestId], references: [requestId])
+  createdAt         DateTime    @default(now())
+
+  @@index([requestId])
+  @@index([userId, createdAt])
+  @@index([apiKeyId, createdAt])
+  @@index([modelId, createdAt])
+  @@index([providerId, createdAt])
+  @@map("usage_records")
+}
+
+model BalanceTransaction {
+  id                       String                 @id @default(uuid()) @db.Uuid
+  userId                   String                 @db.Uuid
+  type                     BalanceTransactionType
+  amountCreditsMicro       BigInt
+  balanceAfterCreditsMicro BigInt
+  referenceType            String?
+  referenceId              String?
+  description              String?
+  user                     User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt                DateTime               @default(now())
+
+  @@index([userId, createdAt])
+  @@index([referenceType, referenceId])
+  @@map("balance_transactions")
+}
+
+model ErrorLog {
+  id                 String      @id @default(uuid()) @db.Uuid
+  requestId          String?
+  requestLogId       String?     @db.Uuid
+  userId             String?     @db.Uuid
+  apiKeyId           String?     @db.Uuid
+  errorType          String
+  errorCode          String
+  message            String
+  providerName       String?
+  upstreamStatusCode Int?
+  metadata           Json?
+  requestLog         RequestLog? @relation(fields: [requestLogId], references: [id], onDelete: SetNull)
+  user               User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  apiKey             ApiKey?     @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+  createdAt          DateTime    @default(now())
+
+  @@index([requestId])
+  @@index([userId, createdAt])
+  @@index([apiKeyId, createdAt])
+  @@index([errorCode, createdAt])
+  @@index([errorType, createdAt])
+  @@map("error_logs")
+}

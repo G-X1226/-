@@ -1,0 +1,27 @@
+{
+  "name": "ai-api-gateway-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OpenAI-compatible AI model API gateway SaaS platform.",
+  "license": "MIT",
+  "packageManager": "pnpm@10.28.1",
+  "scripts": {
+    "dev": "pnpm --filter @ai-gateway/api start:dev",
+    "build": "pnpm --filter @ai-gateway/api build",
+    "typecheck": "pnpm --filter @ai-gateway/api typecheck",
+    "lint": "pnpm --filter @ai-gateway/api lint",
+    "format": "pnpm --filter @ai-gateway/api format",
+    "prisma:generate": "prisma generate --schema prisma/schema.prisma",
+    "prisma:migrate": "prisma migrate dev --schema prisma/schema.prisma",
+    "prisma:seed": "ts-node prisma/seed.ts",
+    "dev:admin": "pnpm --filter @ai-gateway/admin-web dev",
+    "build:admin": "pnpm --filter @ai-gateway/admin-web build",
+    "lint:admin": "pnpm --filter @ai-gateway/admin-web lint",
+    "typecheck:admin": "pnpm --filter @ai-gateway/admin-web typecheck"
+  },
+  "devDependencies": {
+    "@prisma/client": "^6.8.2",
+    "prisma": "^6.8.2",
+    "ts-node": "^10.9.2"
+  }
+}
