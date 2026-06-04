@@ -21,6 +21,53 @@ pnpm prisma:generate
 pnpm dev
 ```
 
+
+## Windows one-click local development
+
+如果你使用 Windows，最简单的方式是直接双击项目根目录里的 `start-dev.cmd`。它就像一个“开店按钮”：先启动 PostgreSQL 和 Redis，再准备 Prisma，最后打开 NestJS 后端。
+
+第一次运行前请先准备好 `.env`：
+
+```powershell
+Copy-Item .env.example .env
+```
+
+然后打开 `.env`，至少填好 `DEEPSEEK_API_KEY`；如果你使用自定义 DeepSeek 地址，也可以填写 `DEEPSEEK_BASE_URL`。
+
+双击或在 PowerShell 中运行：
+
+```powershell
+.\start-dev.cmd
+```
+
+启动脚本会自动执行这些步骤：
+
+1. 检查 `.env` 是否存在。
+2. 检查 Docker Desktop 是否正在运行。
+3. 执行 `docker compose up -d postgres redis`。
+4. 等待 PostgreSQL 和 Redis 真的可用。
+5. 执行 `pnpm prisma generate --schema prisma/schema.prisma`。
+6. 如果存在 `prisma\migrations`，执行 `pnpm prisma migrate deploy`。
+7. 如果数据库看起来为空，会询问是否执行 `pnpm prisma:seed`。
+8. 打开一个新的 PowerShell 窗口执行 `pnpm dev`，并等待 `http://127.0.0.1:3000/health/live` 可访问。
+
+看到下面这些提示，说明关键步骤已经成功：
+
+```text
+[OK] PostgreSQL started
+[OK] Redis started
+[OK] Prisma generated
+[OK] NestJS started
+```
+
+停止本地 Docker 服务时，双击或运行：
+
+```powershell
+.\stop-dev.cmd
+```
+
+如果启动失败，不要关窗口；把 `[ERROR]` 后面的中文错误发给我即可。
+
 ## MVP Scope
 
 - User/auth module skeleton
