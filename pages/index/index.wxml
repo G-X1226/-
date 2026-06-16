@@ -1,0 +1,37 @@
+<view class="container">
+  <view class="card">
+    <view class="section-title">参与者名单</view>
+    <view class="form-row">
+      <input
+        class="name-input"
+        placeholder="输入参与者姓名后点击添加"
+        confirm-type="done"
+        value="{{participantName}}"
+        bindinput="handleNameInput"
+        bindconfirm="addParticipant"
+      />
+      <button class="primary-btn add-btn" bindtap="addParticipant" size="mini" disabled="{{!canAdd}}">添加</button>
+    </view>
+    <block wx:if="{{participants.length}}">
+      <scroll-view scroll-y="true" class="participant-list">
+        <block wx:for="{{participants}}" wx:key="value">
+          <view class="participant-item">
+            <text class="participant-label">{{index + 1}}. {{item}}</text>
+            <button class="remove-btn" size="mini" type="warn" data-index="{{index}}" bindtap="removeParticipant">移除</button>
+          </view>
+        </block>
+      </scroll-view>
+    </block>
+    <view wx:else class="empty-placeholder">名单为空，添加参与者后即可抽签。</view>
+    <button class="secondary-btn clear-btn" bindtap="clearParticipants" size="mini" disabled="{{!participants.length}}">清空名单</button>
+  </view>
+
+  <view class="card">
+    <view class="section-title">随机抽签</view>
+    <button class="primary-btn draw-btn" bindtap="draw" disabled="{{!participants.length}}">开始抽签</button>
+    <block wx:if="{{winner}}">
+      <view class="result">🎉 {{winner}} 🎉</view>
+    </block>
+    <view wx:else class="empty-placeholder">抽签结果将在这里显示。</view>
+  </view>
+</view>
